@@ -12,6 +12,7 @@ transformers.logging.set_verbosity_error()
 class TextModel:
     def __init__(self, model_path: str = "model") -> None:
         super().__init__()
+        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.tokenizer = Tokenizer.from_pretrained(f"{model_path}/tokenizer")
         phi_config = PhiConfig.from_pretrained(f"{model_path}/text_model_cfg.json")
 
@@ -21,10 +22,10 @@ class TextModel:
         self.model = load_checkpoint_and_dispatch(
             self.model,
             f"{model_path}/text_model.pt",
-            device_map={"": "cpu"},
+            device_map={"": self.device},
         )
 
-        self.text_emb = self.model.get_input_embeddings()
+        self.text_emb = self.model.get_input_embeddings().to(self.device)
 
     def input_embeds(self, prompt, image_embeds):
         embeds = []
@@ -35,11 +36,11 @@ class TextModel:
         def _tokenize(txt):
             return self.tokenizer(
                 txt, return_tensors="pt", add_special_tokens=False
-            ).input_ids.to(self.model.device)
+            ).input_ids.to(self.device)
 
         # Add BOS token
         _add_toks(
-            torch.tensor([[self.tokenizer.bos_token_id]], device=self.model.device)
+            torch.tensor([[self.tokenizer.bos_token_id]], device=self.device)
         )
 
         if "<image>" not in prompt:

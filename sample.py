@@ -38,6 +38,7 @@ else:
 
         buffer = ""
         for new_text in streamer:
+            print(new_text)
             buffer += new_text
             if not new_text.endswith("Human"):
                 print(buffer, end="", flush=True)
